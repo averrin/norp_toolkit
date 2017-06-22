@@ -1,0 +1,190 @@
+package main
+
+import (
+	"flag"
+	"fmt"
+	"os"
+	"os/signal"
+	"strings"
+	"syscall"
+	"time"
+
+	"path"
+	"sync"
+
+	"github.com/bwmarrin/discordgo"
+)
+
+func init() {
+	flag.StringVar(&token, "t", "MzE5MjExMzU2MDk0MDcwNzg0.DA9oUQ.yoUVo1u8p-WlBW4z2_x2V3Jnv00", "Bot Token")
+	flag.Parse()
+}
+
+var token string
+var buffer = make([][]byte, 0)
+
+func Start() {
+	// Create a new Discord session using the provided bot token.
+	dg, err := discordgo.New("Bot " + token)
+	if err != nil {
+		fmt.Println("Error creating Discord session: ", err)
+		return
+	}
+
+	// Register ready as a callback for the ready events.
+	dg.AddHandler(ready)
+
+	// Register messageCreate as a callback for the messageCreate events.
+	dg.AddHandler(messageCreate)
+
+	// Register guildCreate as a callback for the guildCreate events.
+	// dg.AddHandler(guildCreate)
+
+	// Open the websocket and begin listening.
+	err = dg.Open()
+	if err != nil {
+		fmt.Println("Error opening Discord session: ", err)
+	}
+
+	// Wait here until CTRL-C or other term signal is received.
+	fmt.Println("CustomSpeak is now running.  Press CTRL-C to exit.")
+	sc := make(chan os.Signal, 1)
+	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
+	<-sc
+
+	// Cleanly close down the Discord session.
+	dg.Close()
+}
+
+var userStates map[string]bool
+var userHist map[string]bool
+var users map[string]string
+var channel *discordgo.Channel
+
+// This function will be called (due to AddHandler above) when the bot receives
+// the "ready" event from Discord.
+func ready(s *discordgo.Session, event *discordgo.Ready) {
+
+	// Set the playing status.
+	s.UpdateStatus(0, "!!cs")
+
+	userStates = map[string]bool{}
+	userHist = map[string]bool{}
+	users = map[string]string{}
+}
+
+type Event struct {
+	Username string
+	Speak    bool
+}
+
+// This function will be called (due to AddHandler above) every time a new
+// message is created on any channel that the autenticated bot has access to.
+func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
+
+	var mutex = &sync.Mutex{}
+	// Ignore all messages created by the bot itself
+	// This isn't required in this specific example but it's a good practice.
+	if m.Author.ID == s.State.User.ID {
+		return
+	}
+
+	if strings.HasPrefix(strings.ToLower(m.Content), "слава укр") {
+		_, _ = s.ChannelMessageSend(m.ChannelID, "Героям Слава!")
+	}
+	if strings.HasPrefix(m.Content, "!!cs") {
+
+		// Find the channel that the message came from.
+		c, err := s.State.Channel(m.ChannelID)
+		if err != nil {
+			// Could not find channel.
+			return
+		}
+		guild, err := s.State.Guild(c.GuildID)
+		folderName := fmt.Sprintf("%v_%v", guild.Name, c.Name)
+
+		// Find the guild for that channel.
+		g, err := s.State.Guild(c.GuildID)
+		if err != nil {
+			// Could not find guild.
+			return
+		}
+
+		// Look for the message sender in that guild's current voice states.
+		fmt.Println("Fetching users")
+		for _, m := range g.Members {
+			// u, _ := s.User(vs.UserID)
+			users[m.User.ID] = m.User.Username
+			fmt.Println(m.User.ID, "  ", m.User.Username)
+		}
+		for _, vs := range g.VoiceStates {
+			if vs.UserID == m.Author.ID {
+				vc, err := s.ChannelVoiceJoin(g.ID, vs.ChannelID, false, true)
+				if err != nil {
+					return
+				}
+				channel, _ = s.Channel(vs.ChannelID)
+				ch := make(chan Event, 50)
+				os.Mkdir(folderName, 0666)
+				vc.AddHandler(func(conn *discordgo.VoiceConnection, event *discordgo.VoiceSpeakingUpdate) {
+					if vs.ChannelID != vc.ChannelID {
+						return
+					}
+					ch <- Event{event.UserID, event.Speaking}
+				})
+
+				go func(ch chan Event) {
+					for {
+						e := <-ch
+						mutex.Lock()
+						userStates[e.Username] = e.Speak
+						mutex.Unlock()
+					}
+				}(ch)
+				go func() {
+					for {
+						mutex.Lock()
+						states := map[string]bool{}
+						for k, v := range userStates {
+							states[k] = v
+						}
+						mutex.Unlock()
+						for u, speak := range states {
+							if userHist[u] == speak {
+								continue
+							}
+							userHist[u] = speak
+
+							userName, ok := users[u]
+							if !ok {
+								fmt.Print(users)
+								panic(u)
+							}
+							fmt.Printf("[%v] %v speaks: %v\n", time.Now(), userName, speak)
+							var cp string
+							var src string
+							if speak {
+								src = "on.png"
+								cp = path.Join("custom", userName, src)
+								if _, err := os.Stat(cp); err == nil {
+									src = cp
+								}
+							} else {
+								src = "off.png"
+								cp = path.Join("custom", userName, src)
+								if _, err := os.Stat(cp); err == nil {
+									src = cp
+								}
+							}
+							dest := path.Join(folderName, userName+".png")
+							os.Remove(dest)
+							os.Link(src, dest)
+						}
+						// time.Sleep(200)
+					}
+				}()
+			}
+		}
+		fmt.Println("Ready")
+	}
+}

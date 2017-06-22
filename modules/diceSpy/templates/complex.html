@@ -1,0 +1,63 @@
+{{define "complex"}}
+<link rel="stylesheet" href="/templates/complex/animate.css">
+<style>
+ content {
+ }
+ .avatar {
+     height: 58px;
+     float: left;
+     margin-right: 12px;
+ }
+ .floated {
+     position: absolute;
+ }
+ .roll {
+    background: #333;
+    color: #eee;
+    padding: 6px;
+    margin-bottom: 4px;
+    width: 300px;
+ }
+ .result {
+     font-weight: bold;
+ }
+ .plus {
+    color: #35bb35;
+    font-size: 20px;
+ }
+ .minus {
+    color: #e47979;
+    font-size: 20px;
+ }
+</style>
+
+<content>
+</content>
+
+<script>
+  var socket = new WebSocket("ws://127.0.0.1:1323/ws");
+  var content = document.querySelector('content');
+  var parser = new DOMParser();
+  var limit = {{.Config.HistoryCount}};
+  socket.onmessage = function() {
+      fetch("/display/complex_content").then(function(response) {
+          response.text().then(function(text) {
+            var newContent = parser.parseFromString(text, "text/html");
+            if (content.querySelectorAll('.roll').length == limit) {
+              var prev = content.querySelector('.roll:first-child');
+              prev.classList.add('animated');
+              prev.classList.add('fadeOutUp');
+              prev.classList.add('floated');
+              prev.addEventListener("webkitAnimationEnd", function() {
+                prev.remove();
+              });
+            }
+            var newRoll = newContent.querySelector('.roll:last-child');
+            newRoll.classList.add('animated');
+            newRoll.classList.add('fadeInUp');
+            content.append(newRoll);
+          });
+      });
+  };
+</script>
+{{end}}

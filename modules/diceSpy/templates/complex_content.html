@@ -1,0 +1,32 @@
+{{define "complex_content"}}
+  {{range $index, $element := .Rolls}}
+  <div class="roll">
+    <img alt="" src="{{.Avatar}}" class="avatar"/>
+    <span class="player">
+      {{if eq .Player "Averrin (GM)"}}
+        <b>Рассказчик</b>
+      {{else}}
+        {{.Player}}
+      {{end}}
+    </span>: <br>
+    <span class="description">{{.Skill}}</span> <br>
+    <b>(</b>
+    {{$results := .Results}}
+    {{ range $index, $element := .Results}}
+        {{if $index}},{{end}}
+        {{if eq $element.V 0}}
+          <span class="result zero">0</span>
+        {{end}}
+        {{if eq $element.V 1}}
+          <span class="result plus">+</span>
+        {{end}}
+        {{if eq $element.V -1}}
+          <span class="result minus">-</span>
+        {{end}}
+    {{end}}
+    <b>)</b> {{.Mod}}
+    = <span class="total">{{.Total}}</span>
+  </div>
+  {{end}}
+
+{{end}}
