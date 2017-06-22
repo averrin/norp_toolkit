@@ -10,3 +10,4 @@ cp modules/$pluginName/README.md deploy/modules/$pluginName/
 cp -r modules/$pluginName/templates deploy/modules/$pluginName/
 cp modules/$pluginName/payload.js deploy/modules/$pluginName/
 cp modules/$pluginName/config.yml deploy/modules/$pluginName/
+cp modules/$pluginName/*.qml deploy/modules/$pluginName/
