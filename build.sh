@@ -7,8 +7,7 @@ mkdir -p deploy &> /dev/null
 
 echo -e "Building modules…"
 mkdir deploy/modules &> /dev/null
-modules/diceSpy/install.sh
-modules/customSpeak/install.sh
+find ./modules/ -iname install.sh -exec bash {} \;
 echo -e ""
 
 echo -e "Building main app…"

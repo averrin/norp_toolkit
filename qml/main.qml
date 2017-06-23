@@ -1,6 +1,7 @@
 import QtQuick 2.7
 import QtQuick.Controls 2.1
 import QtQuick.Layouts 1.3
+import QtQuick.Controls.Universal 2.0
 
 ApplicationWindow {
     id: window
@@ -15,29 +16,32 @@ ApplicationWindow {
         ListView {
 
             Layout.fillHeight: true
-            Layout.fillWidth: true
-            Layout.minimumWidth: 150
+            width: 64
             id: listView
             currentIndex: -1
-            anchors.fill: parent
 
             delegate: ItemDelegate {
                 width: parent.width
-                text: model.title
+                height: parent.width
                 highlighted: ListView.isCurrentItem
                 onClicked: {
                     if (listView.currentIndex != index) {
                         listView.currentIndex = index
-                        stackView.push(model.source)
+                        stackView.push(model.uisource)
                     }
+                }
+                contentItem: Image {
+                    /* fillMode: Image.Pad */
+                    width: parent.width
+                    height: parent.width
+                    fillMode: Image.PreserveAspectFit
+                    horizontalAlignment: Image.AlignHCenter
+                    verticalAlignment: Image.AlignVCenter
+                    source: model.icon
                 }
             }
 
-            model: ListModel {
-                ListElement { title: "diceSpy"; source: "file:modules/diceSpy/diceSpy.qml" }
-                ListElement { title: "customSpeak"; source: "file:modules/customSpeak/customSpeak.qml" }
-            }
-
+            model: PluginModel
             ScrollIndicator.vertical: ScrollIndicator { }
         }
 
@@ -51,7 +55,7 @@ ApplicationWindow {
                 id: pane
 
                 Label {
-                    text: "Qt Quick Controls 2 provides a set of controls that can be used to build complete interfaces in Qt Quick."
+                    text: "NoRoleplaying Toolkit provides a set of utilites for making your roll20 streams much better."
                     anchors.margins: 20
                     anchors.left: parent.left
                     anchors.right: parent.right

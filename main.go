@@ -33,6 +33,13 @@ func main() {
 	if err != nil {
 		log.Println("No plugins found!")
 	}
+	model := NewPluginModel(nil)
+
+	var h = NewPlugin(nil)
+	h.SetTitle("Home")
+	h.SetUisource("qrc:icon.png")
+	h.SetIcon("qrc:qml/home.qml")
+	model.AddPlugin(h)
 
 	for _, file := range files {
 		if file.IsDir() {
@@ -53,6 +60,12 @@ func main() {
 					if err == nil {
 						init.(func())()
 					}
+
+					var pl = NewPlugin(nil)
+					pl.SetTitle(n)
+					pl.SetUisource(fmt.Sprintf("file:modules/%v/%v.qml", n, n))
+					pl.SetIcon(fmt.Sprintf("file:modules/%v/icon.png", n))
+					model.AddPlugin(pl)
 				}
 			}
 		}
@@ -71,14 +84,17 @@ func main() {
 		AllowMethods: []string{echo.GET, echo.PUT, echo.POST, echo.DELETE},
 	}))
 	go e.Start(":1323")
-	startUI()
+	startUI(model)
 }
 
-func startUI() {
+func startUI(model *PluginModel) {
 	core.QCoreApplication_SetAttribute(core.Qt__AA_EnableHighDpiScaling, true)
 	gui.NewQGuiApplication(len(os.Args), os.Args)
 	quickcontrols2.QQuickStyle_SetStyle("universal")
 	view := qml.NewQQmlApplicationEngine(nil)
+
+	view.RootContext().SetContextProperty("PluginModel", model)
+
 	view.Load(core.NewQUrl3("qrc:/qml/main.qml", 0))
 
 	gui.QGuiApplication_Exec()

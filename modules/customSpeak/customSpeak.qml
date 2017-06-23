@@ -1,16 +1,14 @@
-import QtQuick 2.0
-import QtQuick.Controls 2.0
-import QtQuick.Controls.Material 2.0
+import QtQuick 2.7
+import QtQuick.Controls 2.1
 import QtQuick.Controls.Universal 2.0
 
-ApplicationWindow {
-    visible: true
-
+Page {
+    id: page
     Column {
-        anchors.centerIn: parent
+        width: parent.width
 
-        RadioButton { text: qsTr("Small") }
-        RadioButton { text: qsTr("Medium");  checked: true }
-        RadioButton { text: qsTr("Large") }
+        Label {
+            text: "CustomSpeak plugin"
+        }
     }
 }
