@@ -1,6 +1,6 @@
-package main
+package customspeak
 
-import "C"
+// import "C"
 
 // Name is plugin ID
 const Name string = "customSpeak"
@@ -11,17 +11,23 @@ const Version string = "0.3.0"
 //Description is description
 const Description string = "Custom Discord layer for OBS"
 
+type Plugin struct{}
+
 // GetName is name getter
-func GetName() string {
+func (p Plugin) GetName() string {
 	return Name
 }
 
 // GetVersion is version getter
-func GetVersion() string {
+func (p Plugin) GetVersion() string {
 	return Version
 }
 
 // GetDescription is desc getter
-func GetDescription() string {
+func (p Plugin) GetDescription() string {
 	return Description
+}
+
+func NewPlugin() *Plugin {
+	return &Plugin{}
 }

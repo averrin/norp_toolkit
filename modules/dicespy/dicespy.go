@@ -1,4 +1,4 @@
-package main
+package dicespy
 
 import (
 	"encoding/json"
@@ -10,6 +10,8 @@ import (
 
 	"github.com/jinzhu/configor"
 	"github.com/labstack/echo"
+	"github.com/labstack/echo/middleware"
+	"github.com/therecipe/qt/qml"
 	// "log"
 	"net/http"
 	"strings"
@@ -18,14 +20,17 @@ import (
 )
 
 const avatarRoot string = "https://app.roll20.net"
-const root string = "modules/diceSpy"
+const root string = "modules/dicespy"
 
 var config = ConfigStruct{}
 var rolls []*Roll
 var players map[string]string
 
-func Init() {
-	configor.Load(&config, path.Join(root, "config.yml"))
+func StartUI(view *qml.QQmlApplicationEngine) {
+}
+
+func Init() error {
+	return configor.Load(&config, path.Join(root, "config.yml"))
 }
 
 func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
@@ -52,7 +57,14 @@ func wsHandler(c echo.Context) error {
 	return nil
 }
 
-func PrepeareServer(e *echo.Echo) {
+func Serve() {
+
+	e := echo.New()
+	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins: []string{"*"},
+		AllowMethods: []string{echo.GET, echo.PUT, echo.POST, echo.DELETE},
+	}))
+	go e.Start(":1323")
 	t := &Template{
 		templates: template.Must(template.ParseGlob(path.Join(root, "templates/*.html"))),
 	}

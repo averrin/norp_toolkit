@@ -1,4 +1,4 @@
-package main
+package dicespy
 
 import "html/template"
 

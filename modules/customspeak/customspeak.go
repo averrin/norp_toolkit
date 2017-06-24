@@ -1,4 +1,4 @@
-package main
+package customspeak
 
 import (
 	"flag"
@@ -13,7 +13,15 @@ import (
 	"sync"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/therecipe/qt/qml"
 )
+
+func StartUI(view *qml.QQmlApplicationEngine) {
+}
+
+func Init() error {
+	return nil
+}
 
 func init() {
 	flag.StringVar(&token, "t", "MzE5MjExMzU2MDk0MDcwNzg0.DA9oUQ.yoUVo1u8p-WlBW4z2_x2V3Jnv00", "Bot Token")
@@ -23,7 +31,7 @@ func init() {
 var token string
 var buffer = make([][]byte, 0)
 
-func Start() {
+func Serve() {
 	// Create a new Discord session using the provided bot token.
 	dg, err := discordgo.New("Bot " + token)
 	if err != nil {
