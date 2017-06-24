@@ -12,7 +12,6 @@ import (
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/gui"
 	"github.com/therecipe/qt/qml"
-	"github.com/therecipe/qt/quickcontrols2"
 )
 
 var plugins map[string]plugin.PluginInterface
@@ -52,7 +51,7 @@ func main() {
 func startUI(model *PluginModel) {
 	core.QCoreApplication_SetAttribute(core.Qt__AA_EnableHighDpiScaling, true)
 	gui.NewQGuiApplication(len(os.Args), os.Args)
-	quickcontrols2.QQuickStyle_SetStyle("universal")
+	// quickcontrols2.QQuickStyle_SetStyle("universal")
 	view := qml.NewQQmlApplicationEngine(nil)
 
 	view.RootContext().SetContextProperty("PluginModel", model)

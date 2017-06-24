@@ -7,5 +7,6 @@ echo "* Building plugin: $pluginName"
 
 mkdir -p deploy/modules/$pluginName
 cp modules/$pluginName/README.md deploy/modules/$pluginName/
+cp modules/$pluginName/config.yml deploy/modules/$pluginName/
 cp modules/$pluginName/*.png deploy/modules/$pluginName/
 cp -r modules/$pluginName/qml deploy/modules/$pluginName/
