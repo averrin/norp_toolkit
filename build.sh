@@ -14,5 +14,4 @@ echo -e "Building main app…"
 export QT_DIR=/opt/Qt5.8.0
 qtdeploy $1 build desktop .
 cp -r deploy/modules deploy/linux
-cp -r deploy/modules deploy/windows
 echo -e ""

@@ -7,7 +7,7 @@ ApplicationWindow {
     id: window
 
     visible: true
-    title: "Hello World Example"
+    title: "NoRoleplaying Toolkit"
     minimumWidth: 400
     minimumHeight: 600
 
