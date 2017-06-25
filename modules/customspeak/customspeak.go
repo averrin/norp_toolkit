@@ -82,11 +82,11 @@ func saveConfig() {
 	}
 }
 
-func createBot(dg *discordgo.Session) string {
+func createBot() string {
 	// Create a new application.
 	ap := &discordgo.Application{}
 	ap.Name = fmt.Sprintf("%v's spy", me.Username)
-	fmt.Println(dg)
+	ap.Description = "NoRoleplaying Toolkit Discord spy"
 	ap, err := dg.ApplicationCreate(ap)
 	if err != nil {
 		fmt.Println("error creating new applicaiton,", err)
@@ -136,7 +136,7 @@ func Serve(email string, password string) error {
 		}
 
 		if config.Token == "" {
-			config.Token = createBot(dg)
+			config.Token = createBot()
 		}
 		if config.Token == "" {
 			bridge.Error(fmt.Sprintf("Error Bot creation: %v", err))
@@ -255,6 +255,16 @@ func voiceStateUpdate(s *discordgo.Session, vs *discordgo.VoiceStateUpdate) {
 	installHandler(s, vs.VoiceState)
 }
 
+func guildCreate(s *discordgo.Session, event *discordgo.GuildCreate) {
+
+	for _, vs := range event.Guild.VoiceStates {
+		if vs.UserID == me.ID {
+			installHandler(s, vs)
+			return
+		}
+	}
+}
+
 func installHandler(s *discordgo.Session, u *discordgo.VoiceState) {
 	if handlerInstalled {
 		return
@@ -280,7 +290,12 @@ func installHandler(s *discordgo.Session, u *discordgo.VoiceState) {
 
 	_, err = botSession.Guild(u.GuildID)
 	if err != nil {
+		bridge.Error("Waiting for invitation... Invitation page will be opened in your browser.")
 		open.Run(fmt.Sprintf("https://discordapp.com/oauth2/authorize?client_id=%v&scope=bot", bot.ID))
+
+		handlerInstalled = false
+		botSession.AddHandler(guildCreate)
+		return
 	}
 
 	folderName := fmt.Sprintf("%v_%v", guild.Name, c.Name)
