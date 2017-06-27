@@ -14,7 +14,7 @@ import (
 	"github.com/therecipe/qt/qml"
 )
 
-var plugins map[string]plugin.PluginInterface
+var plugins []plugin.PluginInterface
 var root string
 
 const pluginDir = "modules"
@@ -26,9 +26,9 @@ func main() {
 	root, _ = filepath.Abs(filepath.Dir(os.Args[0]))
 	dc := dicespy.NewPlugin()
 	cs := customspeak.NewPlugin()
-	plugins = map[string]plugin.PluginInterface{
-		dc.GetName(): dc,
-		cs.GetName(): cs,
+	plugins = []plugin.PluginInterface{
+		dc,
+		cs,
 	}
 
 	model := NewPluginModel(nil)
