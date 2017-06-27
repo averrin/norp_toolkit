@@ -8,9 +8,11 @@ import (
 	"io/ioutil"
 	"path"
 
+	"github.com/atotto/clipboard"
 	"github.com/jinzhu/configor"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
+	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/qml"
 	// "log"
 	"net/http"
@@ -21,12 +23,50 @@ import (
 
 const avatarRoot string = "https://app.roll20.net"
 const root string = "modules/dicespy"
+const injectScript = "$.getScript('http://127.0.0.1:1323/script')"
 
 var config = ConfigStruct{}
 var rolls []*Roll
 var players map[string]string
 
+var e *echo.Echo
+var bridge *DsMocBridge
+
+//go:generate qtmoc
+type DsMocBridge struct {
+	core.QObject
+
+	_ func()            `signal:"serve"`
+	_ func()            `signal:"disconnect"`
+	_ func()            `signal:"offline"`
+	_ func(err string)  `signal:"error"`
+	_ func()            `signal:"copyscript"`
+	_ func(link string) `signal:"copylink"`
+}
+
 func StartUI(view *qml.QQmlApplicationEngine) {
+	bridge = NewDsMocBridge(nil)
+	bridge.ConnectServe(func() {
+		err := Serve()
+		if err != nil {
+			bridge.Error(fmt.Sprintf("Connection error: %v", err))
+			bridge.Offline()
+		} else {
+			bridge.Error("")
+		}
+	})
+	bridge.ConnectDisconnect(func() {
+		e.Close()
+	})
+
+	bridge.ConnectCopyscript(func() {
+		clipboard.WriteAll(injectScript)
+	})
+	bridge.ConnectCopylink(func(link string) {
+		clipboard.WriteAll(link)
+	})
+	view.RootContext().SetContextProperty("diceSpy", bridge)
+	view.RootContext().SetContextProperty2("injectScript", core.NewQVariant14(injectScript))
 }
 
 func Init() error {
@@ -57,14 +97,13 @@ func wsHandler(c echo.Context) error {
 	return nil
 }
 
-func Serve() {
+func Serve() error {
 
-	e := echo.New()
+	e = echo.New()
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOrigins: []string{"*"},
 		AllowMethods: []string{echo.GET, echo.PUT, echo.POST, echo.DELETE},
 	}))
-	go e.Start(":1323")
 	t := &Template{
 		templates: template.Must(template.ParseGlob(path.Join(root, "templates/*.html"))),
 	}
@@ -110,6 +149,8 @@ func Serve() {
 	fmt.Println("")
 	fmt.Println("-------")
 	fmt.Println("")
+	go e.Start(":1323")
+	return nil
 	// http.ListenAndServe(":1323", handler)
 }
 
