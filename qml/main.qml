@@ -9,8 +9,8 @@ ApplicationWindow {
 
     visible: true
     title: "NoRoleplaying Toolkit"
-    minimumWidth: 400
-    minimumHeight: 600
+    minimumWidth: 600
+    minimumHeight: 400
 
     RowLayout {
         anchors.fill: parent

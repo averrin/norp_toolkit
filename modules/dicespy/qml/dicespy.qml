@@ -47,6 +47,7 @@ Page {
                 selectByMouse: true
             }
             Button {
+                width: 70
                 text: "Copy"
                 onClicked: {
                     diceSpy.copyscript()
@@ -55,9 +56,12 @@ Page {
 
             Label {
                 text: "Available templates:"
+                horizontalAlignment: Text.AlignRight
+                Layout.minimumWidth: 250
             }
             ComboBox {
                 id: tpl
+                Layout.minimumWidth: 140
                 textRole: "text"
                 model: ListModel{
                     id: tplModel
@@ -73,7 +77,9 @@ Page {
                 selectByMouse: true
             }
             Row {
+                Layout.preferredWidth: 140
                 Button {
+                    width: 70
                     text: "Copy"
                     anchors.rightMargin: 4
                     onClicked: {
@@ -81,6 +87,7 @@ Page {
                     }
                 }
                 Button {
+                    width: 70
                     text: "View"
                     enabled: connectStatus.checked
                     onClicked: {
