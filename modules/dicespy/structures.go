@@ -6,23 +6,25 @@ type ConfigStruct struct {
 	HistoryCount int `default:"1"`
 }
 
+type RollResult struct {
+	Type string `json:"type"`
+	Dice int    `json:"dice,omitempty"`
+	Fate bool   `json:"fate,omitempty"`
+	Mods struct {
+	} `json:"mods,omitempty"`
+	Sides   int `json:"sides,omitempty"`
+	Results []struct {
+		V int `json:"v"`
+	} `json:"results,omitempty"`
+	Expr string `json:"expr,omitempty"`
+	Text string `json:"text,omitempty"`
+}
+
 type Roll struct {
-	Type  string `json:"type"`
-	Rolls []struct {
-		Type string `json:"type"`
-		Dice int    `json:"dice,omitempty"`
-		// Fate bool   `json:"fate,omitempty"`
-		Mods struct {
-		} `json:"mods,omitempty"`
-		Sides   int `json:"sides,omitempty"`
-		Results []struct {
-			V int `json:"v"`
-		} `json:"results,omitempty"`
-		Expr string `json:"expr,omitempty"`
-		Text string `json:"text,omitempty"`
-	} `json:"rolls"`
-	ResultType string `json:"resultType"`
-	Total      int    `json:"total"`
+	Type       string       `json:"type"`
+	Rolls      []RollResult `json:"rolls"`
+	ResultType string       `json:"resultType"`
+	Total      int          `json:"total"`
 	Player     string
 	Avatar     string
 	OrigRoll   string

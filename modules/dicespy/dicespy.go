@@ -14,6 +14,7 @@ import (
 	"github.com/labstack/echo/middleware"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/qml"
+	"github.com/therecipe/qt/webview"
 	// "log"
 	"net/http"
 	"strings"
@@ -42,6 +43,8 @@ type DsMocBridge struct {
 	_ func(err string)  `signal:"error"`
 	_ func()            `signal:"copyscript"`
 	_ func(link string) `signal:"copylink"`
+	_ func(link string) `signal:"viewlink"`
+	_ func()            `signal:"roll"`
 }
 
 func StartUI(view *qml.QQmlApplicationEngine) {
@@ -65,6 +68,33 @@ func StartUI(view *qml.QQmlApplicationEngine) {
 	bridge.ConnectCopylink(func(link string) {
 		clipboard.WriteAll(link)
 	})
+	bridge.ConnectViewlink(func(link string) {
+		view.RootContext().SetContextProperty2("templateLink", core.NewQVariant14(link))
+		webview.QtWebView_Initialize()
+		view.Load(core.NewQUrl3("qrc:/qml/view.qml", 0))
+	})
+	bridge.ConnectRoll(func() {
+		processRoll(&Roll{
+			Type:     "test roll",
+			Total:    5,
+			Player:   "NoRP Toolkit",
+			Avatar:   "TODO",
+			Skill:    "Roll for Dice Rolling",
+			Mod:      "+3",
+			OrigRoll: "4df+3 Roll for Dice Rolling",
+			Results: []struct {
+				V int `json:"v"`
+			}{{V: 1}, {V: 1}, {V: 0}, {V: -1}},
+			Message: "TODO",
+			Rolls: []RollResult{
+				RollResult{
+					Dice:  4,
+					Sides: 6,
+				},
+			},
+		})
+	})
+
 	view.RootContext().SetContextProperty("diceSpy", bridge)
 	view.RootContext().SetContextProperty2("injectScript", core.NewQVariant14(injectScript))
 }
@@ -74,7 +104,8 @@ func Init() error {
 }
 
 func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
-	return t.templates.ExecuteTemplate(w, name, data)
+	templates := template.Must(template.ParseGlob(path.Join(root, "templates/*.html")))
+	return templates.ExecuteTemplate(w, name, data)
 }
 
 func result(c echo.Context) error {
@@ -97,6 +128,28 @@ func wsHandler(c echo.Context) error {
 	return nil
 }
 
+func processRoll(roll *Roll) {
+	configor.Load(&config, path.Join(root, "config.yml"))
+	fmt.Println(roll)
+	for len(rolls) >= config.HistoryCount {
+		rolls = rolls[1:]
+	}
+	rolls = append(rolls, roll)
+	message := ""
+	for _, r := range rolls {
+		r.Message = renderRoll(r)
+		message += r.Message + "\n\n"
+	}
+
+	ioutil.WriteFile("roll.txt",
+		[]byte(message), 0644)
+
+	if socket != nil {
+		websocket.Message.Send(socket, "Hello, Client!")
+	}
+
+}
+
 func Serve() error {
 
 	e = echo.New()
@@ -104,14 +157,12 @@ func Serve() error {
 		AllowOrigins: []string{"*"},
 		AllowMethods: []string{echo.GET, echo.PUT, echo.POST, echo.DELETE},
 	}))
-	t := &Template{
-		templates: template.Must(template.ParseGlob(path.Join(root, "templates/*.html"))),
-	}
+	t := &Template{}
 	e.Renderer = t
 	e.File("/script", "payload.js")
 	e.GET("/display/:name", result)
-	// e.GET("/ws", wsHandler)
-	e.Static("/templates", "templates")
+	e.GET("/ws", wsHandler)
+	e.Static("/templates", path.Join(root, "templates"))
 
 	e.POST("/players", func(c echo.Context) error {
 		readPlayers(c.Request())
@@ -120,25 +171,8 @@ func Serve() error {
 	})
 
 	e.POST("/roll", func(c echo.Context) error {
-		configor.Load(&config, "config.yml")
 		roll := readRoll(c.Request())
-		fmt.Println(roll)
-		for len(rolls) >= config.HistoryCount {
-			rolls = rolls[1:]
-		}
-		rolls = append(rolls, roll)
-		message := ""
-		for _, r := range rolls {
-			r.Message = renderRoll(r)
-			message += r.Message + "\n\n"
-		}
-
-		ioutil.WriteFile("roll.txt",
-			[]byte(message), 0644)
-
-		if socket != nil {
-			websocket.Message.Send(socket, "Hello, Client!")
-		}
+		processRoll(roll)
 		return c.String(http.StatusOK, "OK")
 	})
 	fmt.Println("")

@@ -1,4 +1,7 @@
 {{define "basic"}}
+<title>
+  Basic NoRP Toolkit DiceSpy template
+</title>
 <style>
  content {
      background: #fff;
@@ -29,24 +32,28 @@
 <script src="/templates/updater.js"></script>
 
 <content>
-  <ul>
-    {{range $index, $element := .Rolls}}
-    <li>
-      <img alt="" src="{{.Avatar}}" class="avatar"/>
-      <span class="player">{{.Player}}</span>: <br>
-      <img alt="" src="/templates/dice.png" class="dice"/>
-      <span class="description">{{.Skill}}</span> <br>
-      <b>(</b>
-      {{$results := .Results}}
-      {{ range $index, $element := .Results}}
-          {{if $index}},{{end}}
-          <span class="result">{{$element.V}}</span>
+  {{if .Rolls}}
+    <ul>
+      {{range $index, $element := .Rolls}}
+      <li>
+        <img alt="" src="{{.Avatar}}" class="avatar"/>
+        <span class="player">{{.Player}}</span>: <br>
+        <img alt="" src="/templates/dice.png" class="dice"/>
+        <span class="description">{{.Skill}}</span> <br>
+        <b>(</b>
+        {{$results := .Results}}
+        {{ range $index, $element := .Results}}
+            {{if $index}},{{end}}
+            <span class="result">{{$element.V}}</span>
+        {{end}}
+        <b>)</b> {{.Mod}}
+        = <span class="total">{{.Total}}</span>
+      </li>
       {{end}}
-      <b>)</b> {{.Mod}}
-      = <span class="total">{{.Total}}</span>
-    </li>
-    {{end}}
-  </ul>
+    </ul>
+  {{else}}
+    Please roll some dices.
+  {{end}}
 </content>
 
 {{end}}
