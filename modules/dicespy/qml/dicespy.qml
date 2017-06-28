@@ -1,6 +1,7 @@
 import QtQuick 2.7
 import QtQuick.Controls 2.1
 import QtQuick.Controls.Universal 2.0
+import QtQuick.Layouts 1.3
 
 Page {
     id: page
@@ -36,10 +37,11 @@ Page {
                 }
             }
         }
-        Row {
-            width: parent.width
+        GridLayout {
+            columns: 2
+
             TextField {
-                width: 350
+                Layout.preferredWidth: 350
                 readOnly: true
                 text: injectScript
                 selectByMouse: true
@@ -50,10 +52,7 @@ Page {
                     diceSpy.copyscript()
                 }
             }
-        }
 
-        Row {
-            width: parent.width
             Label {
                 text: "Available templates:"
             }
@@ -66,19 +65,27 @@ Page {
                     ListElement {text: "complex.html"; link: "http://127.0.0.1:1323/display/complex"}
                 }
             }
-        }
-        Row {
-            width: parent.width
+
             TextField {
-                width: 350
+                Layout.preferredWidth: 350
                 readOnly: true
                 text: tplModel.get(tpl.currentIndex).link
                 selectByMouse: true
             }
-            Button {
-                text: "Copy"
-                onClicked: {
-                    diceSpy.copylink(tplModel.get(tpl.currentIndex).link)
+            Row {
+                Button {
+                    text: "Copy"
+                    anchors.rightMargin: 4
+                    onClicked: {
+                        diceSpy.copylink(tplModel.get(tpl.currentIndex).link)
+                    }
+                }
+                Button {
+                    text: "View"
+                    enabled: connectStatus.checked
+                    onClicked: {
+                        diceSpy.viewlink(tplModel.get(tpl.currentIndex).link)
+                    }
                 }
             }
         }

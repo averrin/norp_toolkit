@@ -1,4 +1,7 @@
 {{define "complex"}}
+<title>
+  Complex NoRP Toolkit DiceSpy template
+</title>
 <link rel="stylesheet" href="/templates/complex/animate.css">
 <style>
  content {
@@ -32,6 +35,7 @@
 </style>
 
 <content>
+  Please roll some dices.
 </content>
 
 <script>
@@ -40,6 +44,7 @@
   var parser = new DOMParser();
   var limit = {{.Config.HistoryCount}};
   socket.onmessage = function() {
+      content.innerHtml = "";
       fetch("/display/complex_content").then(function(response) {
           response.text().then(function(text) {
             var newContent = parser.parseFromString(text, "text/html");
@@ -55,7 +60,7 @@
             var newRoll = newContent.querySelector('.roll:last-child');
             newRoll.classList.add('animated');
             newRoll.classList.add('fadeInUp');
-            content.append(newRoll);
+            content.appendChild(newRoll);
           });
       });
   };
