@@ -14,8 +14,8 @@ import (
 	"github.com/labstack/echo/middleware"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/qml"
-	"github.com/therecipe/qt/webview"
-	// "log"
+	// "github.com/therecipe/qt/webengine"
+	// "github.com/therecipe/qt/widgets"
 	"net/http"
 	"strings"
 
@@ -69,30 +69,26 @@ func StartUI(view *qml.QQmlApplicationEngine) {
 		clipboard.WriteAll(link)
 	})
 	bridge.ConnectViewlink(func(link string) {
-		view.RootContext().SetContextProperty2("templateLink", core.NewQVariant14(link))
-		webview.QtWebView_Initialize()
-		view.Load(core.NewQUrl3("qrc:/qml/view.qml", 0))
+		// var window = widgets.NewQMainWindow(nil, 0)
+
+		// var centralWidget = widgets.NewQWidget(nil, 0)
+		// centralWidget.SetLayout(widgets.NewQVBoxLayout())
+
+		// var wview = webengine.NewQWebEngineView(nil)
+		// wview.Load(core.NewQUrl3(link, 0))
+		// centralWidget.Layout().AddWidget(wview)
+
+		// var rbutton = widgets.NewQPushButton2("Reload", nil)
+		// rbutton.ConnectClicked(func(checked bool) {
+		// 	wview.Reload()
+		// })
+		// centralWidget.Layout().AddWidget(rbutton)
+
+		// window.SetCentralWidget(centralWidget)
+		// window.Show()
 	})
 	bridge.ConnectRoll(func() {
-		processRoll(&Roll{
-			Type:     "test roll",
-			Total:    5,
-			Player:   "NoRP Toolkit",
-			Avatar:   "TODO",
-			Skill:    "Roll for Dice Rolling",
-			Mod:      "+3",
-			OrigRoll: "4df+3 Roll for Dice Rolling",
-			Results: []struct {
-				V int `json:"v"`
-			}{{V: 1}, {V: 1}, {V: 0}, {V: -1}},
-			Message: "TODO",
-			Rolls: []RollResult{
-				RollResult{
-					Dice:  4,
-					Sides: 6,
-				},
-			},
-		})
+		processRoll(getTestRoll())
 	})
 
 	view.RootContext().SetContextProperty("diceSpy", bridge)

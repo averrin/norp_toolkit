@@ -1,6 +1,7 @@
 package dicespy
 
 import "html/template"
+import "fmt"
 
 type ConfigStruct struct {
 	HistoryCount int `default:"1"`
@@ -50,4 +51,41 @@ type RollWrapper struct {
 
 type Template struct {
 	templates *template.Template
+}
+
+func getTestRoll() *Roll {
+	return &Roll{
+		Type:       "V",
+		ResultType: "sum",
+		Total:      5,
+		Player:     "NoRP Toolkit",
+		Avatar:     fmt.Sprintf("%v/users/avatar/267336/30", avatarRoot),
+		Skill:      "Roll for Dice Rolling",
+		Mod:        "+3",
+		OrigRoll:   "4df+3 Roll for Dice Rolling",
+		Results: []struct {
+			V int `json:"v"`
+		}{{V: 1}, {V: 1}, {V: 0}, {V: -1}},
+		Message: "TODO",
+		Rolls: []RollResult{
+			RollResult{
+				Type:  "R",
+				Dice:  4,
+				Sides: 3,
+				Fate:  true,
+				Results: []struct {
+					V int `json:"v"`
+				}{{V: 1}, {V: 1}, {V: 0}, {V: -1}},
+			},
+			RollResult{
+				Type: "M",
+				Expr: "+3",
+			},
+			RollResult{
+				Type: "C",
+				Expr: "Roll for Dice Rolling",
+			},
+		},
+	}
+
 }
