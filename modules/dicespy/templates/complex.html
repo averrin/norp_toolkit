@@ -35,16 +35,18 @@
 </style>
 
 <content>
-  Please roll some dices.
+  <span id="init">
+    Please roll some dices.
+  </span>
 </content>
 
 <script>
   var socket = new WebSocket("ws://127.0.0.1:1323/ws");
   var content = document.querySelector('content');
+  var init = document.querySelector('#init');
   var parser = new DOMParser();
   var limit = {{.Config.HistoryCount}};
   socket.onmessage = function() {
-      content.innerHtml = "";
       fetch("/display/complex_content").then(function(response) {
           response.text().then(function(text) {
             var newContent = parser.parseFromString(text, "text/html");
@@ -60,6 +62,7 @@
             var newRoll = newContent.querySelector('.roll:last-child');
             newRoll.classList.add('animated');
             newRoll.classList.add('fadeInUp');
+            init.remove();
             content.appendChild(newRoll);
           });
       });
