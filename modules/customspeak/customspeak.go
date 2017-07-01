@@ -13,6 +13,8 @@ import (
 	"syscall"
 	"time"
 
+	_ "log"
+
 	yaml "gopkg.in/yaml.v1"
 
 	"path"
@@ -75,8 +77,12 @@ var sc chan os.Signal
 var handlerInstalled bool
 
 func saveConfig() {
-	d, _ := yaml.Marshal(&config)
-	err := ioutil.WriteFile(path.Join(root, "config.yml"), d, 0644)
+	d, err := yaml.Marshal(&config)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Printf("Writing file: %v\n", path.Join(root, "config.yml"))
+	err = ioutil.WriteFile(path.Join(root, "config.yml"), d, 0644)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -153,6 +159,11 @@ func Serve(email string, password string) error {
 			return
 		}
 		bot, _ = botSession.User("@me")
+		if bot == nil {
+			bridge.Error("Error creating Bot session: Bot user not found")
+			bridge.Offline()
+			return
+		}
 
 		img, err := ioutil.ReadFile(path.Join(root, "icon.png"))
 		if err != nil {
@@ -167,8 +178,6 @@ func Serve(email string, password string) error {
 		avatar := fmt.Sprintf("data:%s;base64,%s", contentType, base64img)
 		_, err = botSession.UserUpdate("", "", "", avatar, "")
 
-		dg.AddHandler(ready)
-
 		err = botSession.Open()
 		if err != nil {
 			fmt.Println("Error opening bot session: ", err)
@@ -178,10 +187,11 @@ func Serve(email string, password string) error {
 			return
 		}
 
-		fmt.Println(dg.UpdateStatus(0, "NoRP Toolkit"))
-		fmt.Println(botSession.UpdateStatus(0, "NoRP Toolkit"))
+		botSession.UpdateStatus(0, "NoRP Toolkit")
+		botSession.UpdateStatus(0, "NoRP Toolkit")
 
 		dg.AddHandler(messageCreate)
+		botSession.AddHandler(ready)
 
 		// Wait here until CTRL-C or other term signal is received.
 		fmt.Println("CustomSpeak is now running.  Press CTRL-C to exit.")
@@ -197,6 +207,9 @@ func Serve(email string, password string) error {
 		dg.Close()
 		botSession.Close()
 		handlerInstalled = false
+
+		bridge.Setguild("")
+		bridge.Setchannel("")
 		fmt.Println("Disconnected")
 	}(dg)
 	return nil
@@ -216,10 +229,11 @@ func ready(s *discordgo.Session, event *discordgo.Ready) {
 	userHist = map[string]bool{}
 	users = map[string]string{}
 
+	fmt.Println("Ready handler")
 	for _, g := range event.Guilds {
 		for _, vs := range g.VoiceStates {
 			if vs.UserID == me.ID {
-				installHandler(s, vs)
+				installHandler(botSession, vs)
 				return
 			}
 		}
@@ -228,6 +242,7 @@ func ready(s *discordgo.Session, event *discordgo.Ready) {
 
 }
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
+	fmt.Println("Message handler")
 	if strings.HasPrefix(strings.ToLower(m.Content), "слава укр") {
 		_, _ = s.ChannelMessageSend(m.ChannelID, "Героям Слава!")
 	}
@@ -248,18 +263,20 @@ func fetchUsers(guild *discordgo.Guild) {
 // This function will be called (due to AddHandler above) every time a new
 // message is created on any channel that the autenticated bot has access to.
 func voiceStateUpdate(s *discordgo.Session, vs *discordgo.VoiceStateUpdate) {
+	fmt.Println("Voice handler")
 	if vs.UserID != me.ID {
 		return
 	}
 
-	installHandler(s, vs.VoiceState)
+	installHandler(botSession, vs.VoiceState)
 }
 
 func guildCreate(s *discordgo.Session, event *discordgo.GuildCreate) {
+	fmt.Println("Guild handler")
 
 	for _, vs := range event.Guild.VoiceStates {
 		if vs.UserID == me.ID {
-			installHandler(s, vs)
+			installHandler(botSession, vs)
 			return
 		}
 	}
@@ -269,6 +286,9 @@ func installHandler(s *discordgo.Session, u *discordgo.VoiceState) {
 	if handlerInstalled {
 		return
 	}
+
+	fmt.Println("Installing handler")
+	bridge.Error("")
 	handlerInstalled = true
 	var mutex = &sync.Mutex{}
 	c, err := s.State.Channel(u.ChannelID)
@@ -311,6 +331,11 @@ func installHandler(s *discordgo.Session, u *discordgo.VoiceState) {
 	ch := make(chan Event, 50)
 	os.Mkdir(folderName, 0774)
 	vc, err := botSession.ChannelVoiceJoin(guild.ID, c.ID, true, false)
+	if err != nil {
+		bridge.Error(fmt.Sprintf("Voice channel connection error: %v", err))
+		bridge.Offline()
+		return
+	}
 	vc.AddHandler(func(conn *discordgo.VoiceConnection, event *discordgo.VoiceSpeakingUpdate) {
 		// if vs.ChannelID != vc.ChannelID {
 		// 	return

@@ -3,10 +3,18 @@ package dicespy
 import (
 	"encoding/json"
 	"fmt"
-	"html/template"
+	template "html/template"
 	"io"
 	"io/ioutil"
+	"log"
+	"os"
 	"path"
+	"strconv"
+
+	yaml "gopkg.in/yaml.v1"
+
+	"net/http"
+	"strings"
 
 	"github.com/atotto/clipboard"
 	"github.com/jinzhu/configor"
@@ -14,17 +22,16 @@ import (
 	"github.com/labstack/echo/middleware"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/qml"
-	// "github.com/therecipe/qt/webengine"
-	// "github.com/therecipe/qt/widgets"
-	"net/http"
-	"strings"
+	"github.com/therecipe/qt/webengine"
+	"github.com/therecipe/qt/widgets"
 
 	"golang.org/x/net/websocket"
 )
 
 const avatarRoot string = "https://app.roll20.net"
 const root string = "modules/dicespy"
-const injectScript = "$.getScript('http://127.0.0.1:1323/script')"
+const port string = "1323"
+const injectScript = "$.getScript('http://127.0.0.1:" + port + "/script')"
 
 var config = ConfigStruct{}
 var rolls []*Roll
@@ -45,6 +52,15 @@ type DsMocBridge struct {
 	_ func(link string) `signal:"copylink"`
 	_ func(link string) `signal:"viewlink"`
 	_ func()            `signal:"roll"`
+	_ func(size int)    `signal:"sethistory"`
+}
+
+func saveConfig() {
+	d, _ := yaml.Marshal(&config)
+	err := ioutil.WriteFile(path.Join(root, "config.yml"), d, 0644)
+	if err != nil {
+		fmt.Println(err)
+	}
 }
 
 func StartUI(view *qml.QQmlApplicationEngine) {
@@ -68,24 +84,34 @@ func StartUI(view *qml.QQmlApplicationEngine) {
 	bridge.ConnectCopylink(func(link string) {
 		clipboard.WriteAll(link)
 	})
+	bridge.ConnectSethistory(func(size int) {
+		config.HistoryCount = size
+		saveConfig()
+	})
 	bridge.ConnectViewlink(func(link string) {
-		// var window = widgets.NewQMainWindow(nil, 0)
+		widgets.NewQApplication(len(os.Args), os.Args)
+		var window = widgets.NewQMainWindow(nil, 0)
 
-		// var centralWidget = widgets.NewQWidget(nil, 0)
-		// centralWidget.SetLayout(widgets.NewQVBoxLayout())
+		var centralWidget = widgets.NewQWidget(nil, 0)
+		centralWidget.SetLayout(widgets.NewQVBoxLayout())
 
-		// var wview = webengine.NewQWebEngineView(nil)
-		// wview.Load(core.NewQUrl3(link, 0))
-		// centralWidget.Layout().AddWidget(wview)
+		var wview = webengine.NewQWebEngineView(nil)
+		wview.Load(core.NewQUrl3(link, 0))
+		centralWidget.Layout().AddWidget(wview)
 
-		// var rbutton = widgets.NewQPushButton2("Reload", nil)
-		// rbutton.ConnectClicked(func(checked bool) {
-		// 	wview.Reload()
-		// })
-		// centralWidget.Layout().AddWidget(rbutton)
+		var rbutton = widgets.NewQPushButton2("Reload", nil)
+		rbutton.ConnectClicked(func(checked bool) {
+			wview.Reload()
+		})
+		centralWidget.Layout().AddWidget(rbutton)
+		var rollButton = widgets.NewQPushButton2("Test roll", nil)
+		rollButton.ConnectClicked(func(checked bool) {
+			processRoll(getTestRoll())
+		})
+		centralWidget.Layout().AddWidget(rollButton)
 
-		// window.SetCentralWidget(centralWidget)
-		// window.Show()
+		window.SetCentralWidget(centralWidget)
+		window.Show()
 	})
 	bridge.ConnectRoll(func() {
 		processRoll(getTestRoll())
@@ -93,13 +119,31 @@ func StartUI(view *qml.QQmlApplicationEngine) {
 
 	view.RootContext().SetContextProperty("diceSpy", bridge)
 	view.RootContext().SetContextProperty2("injectScript", core.NewQVariant14(injectScript))
+	view.RootContext().SetContextProperty2("initHistorySize", core.NewQVariant14(strconv.Itoa(config.HistoryCount)))
+	files, err := ioutil.ReadDir(path.Join(root, "templates"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	model := NewTemplateModel(nil)
+	for _, file := range files {
+		if strings.HasSuffix(file.Name(), ".html") && !strings.Contains(file.Name(), "_content") {
+			t := NewTemplate(nil)
+			t.SetTitle(file.Name())
+			t.SetLink(fmt.Sprintf("http://127.0.0.1:%v/display/%v", port, strings.Replace(file.Name(), ".html", "", 1)))
+			model.AddTemplate(t)
+
+		}
+	}
+	view.RootContext().SetContextProperty("templateModel", model)
+
 }
 
 func Init() error {
 	return configor.Load(&config, path.Join(root, "config.yml"))
 }
 
-func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
+func (t *MyTemplate) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
 	templates := template.Must(template.ParseGlob(path.Join(root, "templates/*.html")))
 	return templates.ExecuteTemplate(w, name, data)
 }
@@ -153,7 +197,7 @@ func Serve() error {
 		AllowOrigins: []string{"*"},
 		AllowMethods: []string{echo.GET, echo.PUT, echo.POST, echo.DELETE},
 	}))
-	t := &Template{}
+	t := &MyTemplate{}
 	e.Renderer = t
 	e.File("/script", "payload.js")
 	e.GET("/display/:name", result)
@@ -171,23 +215,23 @@ func Serve() error {
 		processRoll(roll)
 		return c.String(http.StatusOK, "OK")
 	})
-	fmt.Println("")
-	fmt.Println("-------")
-	fmt.Println("")
-	fmt.Println("Exec `$.getScript('http://127.0.0.1:1323/script');` in roll20.net WebInspector console")
-	fmt.Println("Use `http://127.0.0.1:1323/display/basic` as OBS BrowserSource")
-	fmt.Println("")
-	fmt.Println("-------")
-	fmt.Println("")
-	go e.Start(":1323")
+	go e.Start(":" + port)
 	return nil
-	// http.ListenAndServe(":1323", handler)
+}
+
+func getResult(roll *Roll, t string) RollResult {
+	for _, result := range roll.Rolls {
+		if result.Type == t {
+			return result
+		}
+	}
+	return RollResult{}
 }
 
 func renderRoll(roll *Roll) string {
-	results := roll.Rolls[0].Results
+	results := getResult(roll, "R").Results
 	roll.Results = results
-	roll.Skill = strings.TrimSpace(roll.Rolls[len(roll.Rolls)-1].Text)
+	roll.Skill = strings.TrimSpace(getResult(roll, "C").Text)
 	message := fmt.Sprintf("%v:", roll.Player)
 	if roll.Skill != "" {
 		message += fmt.Sprintf("\n%v", roll.Skill)
@@ -202,8 +246,9 @@ func renderRoll(roll *Roll) string {
 	}
 	message += ")"
 
-	if len(roll.Rolls) >= 3 {
-		roll.Mod = strings.TrimSpace(roll.Rolls[len(roll.Rolls)-2].Expr)
+	modResult := getResult(roll, "M")
+	if modResult.Type != "" {
+		roll.Mod = strings.TrimSpace(modResult.Expr)
 		if roll.Mod != "" {
 			message += fmt.Sprintf(" %v", roll.Mod)
 		}

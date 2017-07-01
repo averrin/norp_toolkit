@@ -1,7 +1,11 @@
 package dicespy
 
-import "html/template"
-import "fmt"
+import (
+	"fmt"
+	"html/template"
+	"math/rand"
+	"time"
+)
 
 type ConfigStruct struct {
 	HistoryCount int `default:"1"`
@@ -49,24 +53,30 @@ type RollWrapper struct {
 	} `json:"d"`
 }
 
-type Template struct {
+type MyTemplate struct {
 	templates *template.Template
 }
 
 func getTestRoll() *Roll {
+	rand.Seed(time.Now().Unix())
+	v := []int{-1, 0, 1}
+	r := []int{
+		v[rand.Intn(3)],
+		v[rand.Intn(3)],
+		v[rand.Intn(3)],
+		v[rand.Intn(3)],
+	}
+	s := 3
+	for _, rr := range r {
+		s += rr
+	}
 	return &Roll{
 		Type:       "V",
 		ResultType: "sum",
-		Total:      5,
+		Total:      s,
 		Player:     "NoRP Toolkit",
-		Avatar:     fmt.Sprintf("%v/users/avatar/267336/30", avatarRoot),
-		Skill:      "Roll for Dice Rolling",
-		Mod:        "+3",
+		Avatar:     fmt.Sprintf("%v/users/avatar/267336/200", avatarRoot),
 		OrigRoll:   "4df+3 Roll for Dice Rolling",
-		Results: []struct {
-			V int `json:"v"`
-		}{{V: 1}, {V: 1}, {V: 0}, {V: -1}},
-		Message: "TODO",
 		Rolls: []RollResult{
 			RollResult{
 				Type:  "R",
@@ -75,7 +85,7 @@ func getTestRoll() *Roll {
 				Fate:  true,
 				Results: []struct {
 					V int `json:"v"`
-				}{{V: 1}, {V: 1}, {V: 0}, {V: -1}},
+				}{{V: r[0]}, {V: r[1]}, {V: r[2]}, {V: r[3]}},
 			},
 			RollResult{
 				Type: "M",
@@ -83,7 +93,7 @@ func getTestRoll() *Roll {
 			},
 			RollResult{
 				Type: "C",
-				Expr: "Roll for Dice Rolling",
+				Text: "Roll for Dice Rolling",
 			},
 		},
 	}

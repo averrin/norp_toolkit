@@ -57,23 +57,35 @@ Page {
             Label {
                 text: "Available templates:"
                 horizontalAlignment: Text.AlignRight
-                Layout.minimumWidth: 250
+                Layout.minimumWidth: 350
             }
             ComboBox {
                 id: tpl
                 Layout.minimumWidth: 140
-                textRole: "text"
-                model: ListModel{
-                    id: tplModel
-                    ListElement {text: "basic.html"; link: "http://127.0.0.1:1323/display/basic"}
-                    ListElement {text: "complex.html"; link: "http://127.0.0.1:1323/display/complex"}
+                textRole: "title"
+                model: templateModel
+            }
+
+            Label {
+                text: "Rolls in history:"
+                horizontalAlignment: Text.AlignRight
+                Layout.minimumWidth: 350
+            }
+
+            SpinBox {
+                to: 20
+                value: initHistorySize
+                /* editable: true */
+                onValueChanged: {
+                    diceSpy.sethistory(value);
                 }
             }
+
 
             TextField {
                 Layout.preferredWidth: 350
                 readOnly: true
-                text: tplModel.get(tpl.currentIndex).link
+                text: templateModel.data(templateModel.index(tpl.currentIndex, 0), Qt.UserRole + 2)
                 selectByMouse: true
             }
             Row {
@@ -83,7 +95,7 @@ Page {
                     text: "Copy"
                     anchors.rightMargin: 4
                     onClicked: {
-                        diceSpy.copylink(tplModel.get(tpl.currentIndex).link)
+                        diceSpy.copylink(templateModel.data(templateModel.index(tpl.currentIndex, 0), Qt.UserRole + 2))
                     }
                 }
                 Button {
@@ -91,7 +103,7 @@ Page {
                     text: "View"
                     enabled: connectStatus.checked
                     onClicked: {
-                        diceSpy.viewlink(tplModel.get(tpl.currentIndex).link)
+                        diceSpy.viewlink(templateModel.data(templateModel.index(tpl.currentIndex, 0), Qt.UserRole + 2))
                     }
                 }
             }
