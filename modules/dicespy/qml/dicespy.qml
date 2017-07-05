@@ -19,26 +19,32 @@ Page {
             wrapMode: Label.Wrap
         }
 
-        Switch {
-            id: connectStatus
-            checked: false
-            text: "Connected"
-            Connections {
-                target: diceSpy
-                onOffline: {
-                    connectStatus.checked = false
-                }
-            }
-            onClicked: {
-                if (checked) {
-                    diceSpy.serve()
-                } else {
-                    diceSpy.disconnect()
-                }
-            }
-        }
         GridLayout {
             columns: 2
+
+            Switch {
+                id: connectStatus
+                checked: false
+                text: "Connected"
+                Connections {
+                    target: diceSpy
+                    onOffline: {
+                        connectStatus.checked = false
+                    }
+                }
+                onClicked: {
+                    if (checked) {
+                        diceSpy.serve()
+                    } else {
+                        diceSpy.disconnect()
+                    }
+                }
+            }
+            Item {
+                Layout.fillHeight: true
+                Layout.fillWidth: true
+                Rectangle { anchors.fill: parent; color: "#ffffff" }
+            }
 
             TextField {
                 Layout.preferredWidth: 350
@@ -46,13 +52,26 @@ Page {
                 text: injectScript
                 selectByMouse: true
             }
-            Button {
-                width: 70
-                text: "Copy"
-                onClicked: {
-                    diceSpy.copyscript()
+            Row {
+                Button {
+                    width: 70
+                    text: "Copy"
+                    anchors.rightMargin: 4
+                    onClicked: {
+                        diceSpy.copyscript()
+                    }
+                }
+
+                Button {
+                    width: 70
+                    text: "Roll"
+                    enabled: connectStatus.checked
+                    onClicked: {
+                        diceSpy.roll()
+                    }
                 }
             }
+
 
             Label {
                 text: "Available templates:"
@@ -107,6 +126,7 @@ Page {
                     }
                 }
             }
+
         }
     }
 }

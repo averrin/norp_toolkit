@@ -1,9 +1,11 @@
 import QtQuick 2.6
 import QtQuick.Controls 2.0
+import QtQuick.Layouts 1.3
 
 Page {
     id: page
-    Column {
+    Column{
+        spacing: 2
         width: parent.width
         anchors.margins: 20
 
@@ -23,6 +25,7 @@ Page {
             placeholderText: "Discord email"
             width: 250
             text: initEmail
+            anchors.bottomMargin: 4
         }
 
         TextField {
@@ -31,6 +34,7 @@ Page {
             echoMode: TextInput.Password
             width: 250
             text: initPassword
+            anchors.bottomMargin: 4
         }
 
         Label {

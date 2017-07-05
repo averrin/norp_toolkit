@@ -7,7 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
-	"os"
+	// "os"
 	"path"
 	"strconv"
 
@@ -22,8 +22,9 @@ import (
 	"github.com/labstack/echo/middleware"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/qml"
-	"github.com/therecipe/qt/webengine"
-	"github.com/therecipe/qt/widgets"
+	"github.com/skratchdot/open-golang/open"
+	// "github.com/therecipe/qt/webengine"
+	// "github.com/therecipe/qt/widgets"
 
 	"golang.org/x/net/websocket"
 )
@@ -89,29 +90,30 @@ func StartUI(view *qml.QQmlApplicationEngine) {
 		saveConfig()
 	})
 	bridge.ConnectViewlink(func(link string) {
-		widgets.NewQApplication(len(os.Args), os.Args)
-		var window = widgets.NewQMainWindow(nil, 0)
+		// widgets.NewQApplication(len(os.Args), os.Args)
+		// var window = widgets.NewQMainWindow(nil, 0)
 
-		var centralWidget = widgets.NewQWidget(nil, 0)
-		centralWidget.SetLayout(widgets.NewQVBoxLayout())
+		// var centralWidget = widgets.NewQWidget(nil, 0)
+		// centralWidget.SetLayout(widgets.NewQVBoxLayout())
 
-		var wview = webengine.NewQWebEngineView(nil)
-		wview.Load(core.NewQUrl3(link, 0))
-		centralWidget.Layout().AddWidget(wview)
+		// var wview = webengine.NewQWebEngineView(nil)
+		// wview.Load(core.NewQUrl3(link, 0))
+		// centralWidget.Layout().AddWidget(wview)
 
-		var rbutton = widgets.NewQPushButton2("Reload", nil)
-		rbutton.ConnectClicked(func(checked bool) {
-			wview.Reload()
-		})
-		centralWidget.Layout().AddWidget(rbutton)
-		var rollButton = widgets.NewQPushButton2("Test roll", nil)
-		rollButton.ConnectClicked(func(checked bool) {
-			processRoll(getTestRoll())
-		})
-		centralWidget.Layout().AddWidget(rollButton)
+		// var rbutton = widgets.NewQPushButton2("Reload", nil)
+		// rbutton.ConnectClicked(func(checked bool) {
+		// 	wview.Reload()
+		// })
+		// centralWidget.Layout().AddWidget(rbutton)
+		// var rollButton = widgets.NewQPushButton2("Test roll", nil)
+		// rollButton.ConnectClicked(func(checked bool) {
+		// 	processRoll(getTestRoll())
+		// })
+		// centralWidget.Layout().AddWidget(rollButton)
 
-		window.SetCentralWidget(centralWidget)
-		window.Show()
+		// window.SetCentralWidget(centralWidget)
+		// window.Show()
+		open.Run(link)
 	})
 	bridge.ConnectRoll(func() {
 		processRoll(getTestRoll())
