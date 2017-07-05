@@ -25,14 +25,17 @@ import (
 	"github.com/skratchdot/open-golang/open"
 	// "github.com/therecipe/qt/webengine"
 	// "github.com/therecipe/qt/widgets"
-
+	"github.com/wirepair/gcd"
+	// "github.com/wirepair/gcd/gcdapi"
+	"golang.org/x/sys/windows/registry"
 	"golang.org/x/net/websocket"
 )
 
 const avatarRoot string = "https://app.roll20.net"
 const root string = "modules/dicespy"
 const port string = "1323"
-const injectScript = "$.getScript('http://127.0.0.1:" + port + "/script')"
+// const injectScript = "$.getScript('http://127.0.0.1:" + port + "/script')"
+var injectScript string
 
 var config = ConfigStruct{}
 var rolls []*Roll
@@ -120,7 +123,7 @@ func StartUI(view *qml.QQmlApplicationEngine) {
 	})
 
 	view.RootContext().SetContextProperty("diceSpy", bridge)
-	view.RootContext().SetContextProperty2("injectScript", core.NewQVariant14(injectScript))
+	// view.RootContext().SetContextProperty2("injectScript", core.NewQVariant14(injectScript))
 	view.RootContext().SetContextProperty2("initHistorySize", core.NewQVariant14(strconv.Itoa(config.HistoryCount)))
 	files, err := ioutil.ReadDir(path.Join(root, "templates"))
 	if err != nil {
@@ -192,6 +195,7 @@ func processRoll(roll *Roll) {
 
 }
 
+
 func Serve() error {
 
 	e = echo.New()
@@ -218,7 +222,43 @@ func Serve() error {
 		return c.String(http.StatusOK, "OK")
 	})
 	go e.Start(":" + port)
+	go openRoll20()
 	return nil
+}
+
+func openRoll20() {
+	k, err := registry.OpenKey(registry.LOCAL_MACHINE, `SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\chrome.exe`, registry.QUERY_VALUE)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer k.Close()
+
+	s, _, err := k.GetStringValue("Path")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	debugger := gcd.NewChromeDebugger()
+	debugger.AddFlags([]string{"--allow-running-insecure-content"})
+	// start process, specify a tmp profile path so we get a fresh profiled browser
+	// set port 9222 as the debug port
+	debugger.StartProcess(s+"\\chrome.exe", "", "9222")
+	// defer debugger.ExitProcess()          // exit when done
+	targets, err := debugger.GetTargets() // get the 'targets' or tabs/background processes
+	if err != nil {
+		log.Fatalf("error getting targets: %s\n", err)
+	}
+	target := targets[0] // take the first one
+
+	// get the Page API and enable it
+	if _, err := target.Page.Enable(); err != nil {
+		log.Fatalf("error getting page: %s\n", err)
+	}
+	ret, err := target.Page.Navigate("http://roll20.net", "", "") // navigate
+	if err != nil {
+		log.Fatalf("Error navigating: %s\n", err)
+	}
+	log.Printf("ret: %#v\n", ret)
 }
 
 func getResult(roll *Roll, t string) RollResult {

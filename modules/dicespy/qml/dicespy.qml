@@ -40,38 +40,14 @@ Page {
                     }
                 }
             }
-            Item {
-                Layout.fillHeight: true
-                Layout.fillWidth: true
-                Rectangle { anchors.fill: parent; color: "#ffffff" }
-            }
-
-            TextField {
-                Layout.preferredWidth: 350
-                readOnly: true
-                text: injectScript
-                selectByMouse: true
-            }
-            Row {
-                Button {
-                    width: 70
-                    text: "Copy"
-                    anchors.rightMargin: 4
-                    onClicked: {
-                        diceSpy.copyscript()
-                    }
-                }
-
-                Button {
-                    width: 70
-                    text: "Roll"
-                    enabled: connectStatus.checked
-                    onClicked: {
-                        diceSpy.roll()
-                    }
+            Button {
+                width: 70
+                text: "Roll"
+                enabled: connectStatus.checked
+                onClicked: {
+                    diceSpy.roll()
                 }
             }
-
 
             Label {
                 text: "Available templates:"

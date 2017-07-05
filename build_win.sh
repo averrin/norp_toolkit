@@ -8,5 +8,5 @@ windres icon.rc -o icon_windows.syso
 cp -r deploy/modules deploy/windows
 cd deploy/windows/
 rm -rf Qt5Widgets.dll
-find . -maxdepth 1 -type d ! -name modules -exec rm -rf {} +
+# find . -maxdepth 1 -type d ! -name modules -exec rm -rf {} +
 cd -
