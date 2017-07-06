@@ -20,22 +20,24 @@ import (
 	"github.com/jinzhu/configor"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
+	"github.com/skratchdot/open-golang/open"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/qml"
-	"github.com/skratchdot/open-golang/open"
 	// "github.com/therecipe/qt/webengine"
 	// "github.com/therecipe/qt/widgets"
 	"github.com/wirepair/gcd"
 	// "github.com/wirepair/gcd/gcdapi"
-	"golang.org/x/sys/windows/registry"
 	"golang.org/x/net/websocket"
+	"golang.org/x/sys/windows/registry"
 )
 
 const avatarRoot string = "https://app.roll20.net"
 const root string = "modules/dicespy"
 const port string = "1323"
-// const injectScript = "$.getScript('http://127.0.0.1:" + port + "/script')"
-var injectScript string
+
+const injectScript = "$.getScript('http://127.0.0.1:" + port + "/script')"
+
+// var injectScript string
 
 var config = ConfigStruct{}
 var rolls []*Roll
@@ -195,7 +197,6 @@ func processRoll(roll *Roll) {
 
 }
 
-
 func Serve() error {
 
 	e = echo.New()
@@ -239,7 +240,7 @@ func openRoll20() {
 	}
 
 	debugger := gcd.NewChromeDebugger()
-	debugger.AddFlags([]string{"--allow-running-insecure-content"})
+	debugger.AddFlags([]string{"--allow-running-insecure-content", fmt.Sprintf("--load-extension=%v", path.Join(root, "chrome-csp-disable"))})
 	// start process, specify a tmp profile path so we get a fresh profiled browser
 	// set port 9222 as the debug port
 	debugger.StartProcess(s+"\\chrome.exe", "", "9222")
@@ -254,6 +255,9 @@ func openRoll20() {
 	if _, err := target.Page.Enable(); err != nil {
 		log.Fatalf("error getting page: %s\n", err)
 	}
+	target.Subscribe("Page.loadEventFired", func(targ *gcd.ChromeTarget, v []byte) {
+		target.Runtime.Evaluate(injectScript, "", false, false, 0, false, false, false, false)
+	})
 	ret, err := target.Page.Navigate("http://roll20.net", "", "") // navigate
 	if err != nil {
 		log.Fatalf("Error navigating: %s\n", err)
