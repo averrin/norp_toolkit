@@ -12,3 +12,4 @@ cp -r modules/$pluginName/templates deploy/modules/$pluginName/
 cp modules/$pluginName/payload.js deploy/modules/$pluginName/
 cp modules/$pluginName/config.yml deploy/modules/$pluginName/
 cp -r modules/$pluginName/qml deploy/modules/$pluginName/
+cp -r modules/$pluginName/chrome-csp-disable deploy/modules/$pluginName/

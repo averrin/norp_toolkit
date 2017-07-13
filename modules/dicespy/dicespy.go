@@ -7,7 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
-	// "os"
+	"os"
 	"path"
 	"strconv"
 
@@ -20,19 +20,17 @@ import (
 	"github.com/jinzhu/configor"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
-	"github.com/skratchdot/open-golang/open"
+	// "github.com/skratchdot/open-golang/open"
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/qml"
-	// "github.com/therecipe/qt/webengine"
-	// "github.com/therecipe/qt/widgets"
-	"github.com/wirepair/gcd"
-	// "github.com/wirepair/gcd/gcdapi"
+	"github.com/therecipe/qt/webkit"
+	"github.com/therecipe/qt/widgets"
 	"golang.org/x/net/websocket"
-	"golang.org/x/sys/windows/registry"
+	"path/filepath"
 )
 
 const avatarRoot string = "https://app.roll20.net"
-const root string = "modules/dicespy"
+// const root string = "modules/dicespy"
 const port string = "1323"
 
 const injectScript = "$.getScript('http://127.0.0.1:" + port + "/script')"
@@ -45,6 +43,7 @@ var players map[string]string
 
 var e *echo.Echo
 var bridge *DsMocBridge
+var root string
 
 //go:generate qtmoc
 type DsMocBridge struct {
@@ -95,30 +94,30 @@ func StartUI(view *qml.QQmlApplicationEngine) {
 		saveConfig()
 	})
 	bridge.ConnectViewlink(func(link string) {
-		// widgets.NewQApplication(len(os.Args), os.Args)
-		// var window = widgets.NewQMainWindow(nil, 0)
+		widgets.NewQApplication(len(os.Args), os.Args)
+		var window = widgets.NewQMainWindow(nil, 0)
 
-		// var centralWidget = widgets.NewQWidget(nil, 0)
-		// centralWidget.SetLayout(widgets.NewQVBoxLayout())
+		var centralWidget = widgets.NewQWidget(nil, 0)
+		centralWidget.SetLayout(widgets.NewQVBoxLayout())
 
-		// var wview = webengine.NewQWebEngineView(nil)
-		// wview.Load(core.NewQUrl3(link, 0))
-		// centralWidget.Layout().AddWidget(wview)
+		var wview = webkit.NewQWebView(nil)
+		wview.Load(core.NewQUrl3(link, 0))
+		centralWidget.Layout().AddWidget(wview)
 
-		// var rbutton = widgets.NewQPushButton2("Reload", nil)
-		// rbutton.ConnectClicked(func(checked bool) {
-		// 	wview.Reload()
-		// })
-		// centralWidget.Layout().AddWidget(rbutton)
-		// var rollButton = widgets.NewQPushButton2("Test roll", nil)
-		// rollButton.ConnectClicked(func(checked bool) {
-		// 	processRoll(getTestRoll())
-		// })
-		// centralWidget.Layout().AddWidget(rollButton)
+		var rbutton = widgets.NewQPushButton2("Reload", nil)
+		rbutton.ConnectClicked(func(checked bool) {
+			wview.Reload()
+		})
+		centralWidget.Layout().AddWidget(rbutton)
+		var rollButton = widgets.NewQPushButton2("Test roll", nil)
+		rollButton.ConnectClicked(func(checked bool) {
+			processRoll(getTestRoll())
+		})
+		centralWidget.Layout().AddWidget(rollButton)
 
-		// window.SetCentralWidget(centralWidget)
-		// window.Show()
-		open.Run(link)
+		window.SetCentralWidget(centralWidget)
+		window.Show()
+		// open.Run(link)
 	})
 	bridge.ConnectRoll(func() {
 		processRoll(getTestRoll())
@@ -147,6 +146,8 @@ func StartUI(view *qml.QQmlApplicationEngine) {
 }
 
 func Init() error {
+	root, _ = filepath.Abs(filepath.Dir(os.Args[0]))
+	root = path.Join(root, "modules/dicespy")
 	return configor.Load(&config, path.Join(root, "config.yml"))
 }
 
@@ -223,46 +224,10 @@ func Serve() error {
 		return c.String(http.StatusOK, "OK")
 	})
 	go e.Start(":" + port)
-	go openRoll20()
 	return nil
 }
 
 func openRoll20() {
-	k, err := registry.OpenKey(registry.LOCAL_MACHINE, `SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\chrome.exe`, registry.QUERY_VALUE)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer k.Close()
-
-	s, _, err := k.GetStringValue("Path")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	debugger := gcd.NewChromeDebugger()
-	debugger.AddFlags([]string{"--allow-running-insecure-content", fmt.Sprintf("--load-extension=%v", path.Join(root, "chrome-csp-disable"))})
-	// start process, specify a tmp profile path so we get a fresh profiled browser
-	// set port 9222 as the debug port
-	debugger.StartProcess(s+"\\chrome.exe", "", "9222")
-	// defer debugger.ExitProcess()          // exit when done
-	targets, err := debugger.GetTargets() // get the 'targets' or tabs/background processes
-	if err != nil {
-		log.Fatalf("error getting targets: %s\n", err)
-	}
-	target := targets[0] // take the first one
-
-	// get the Page API and enable it
-	if _, err := target.Page.Enable(); err != nil {
-		log.Fatalf("error getting page: %s\n", err)
-	}
-	target.Subscribe("Page.loadEventFired", func(targ *gcd.ChromeTarget, v []byte) {
-		target.Runtime.Evaluate(injectScript, "", false, false, 0, false, false, false, false)
-	})
-	ret, err := target.Page.Navigate("http://roll20.net", "", "") // navigate
-	if err != nil {
-		log.Fatalf("Error navigating: %s\n", err)
-	}
-	log.Printf("ret: %#v\n", ret)
 }
 
 func getResult(roll *Roll, t string) RollResult {
