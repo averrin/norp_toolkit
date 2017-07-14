@@ -41,3 +41,7 @@ func (p Plugin) Init() error {
 func (p Plugin) StartUI(view *qml.QQmlApplicationEngine) {
 	StartUI(view)
 }
+
+func (p Plugin) Close() {
+	Close()
+}

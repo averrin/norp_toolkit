@@ -8,4 +8,5 @@ type PluginInterface interface {
 	GetDescription() string
 	Init() error
 	StartUI(*qml.QQmlApplicationEngine)
+	Close()
 }

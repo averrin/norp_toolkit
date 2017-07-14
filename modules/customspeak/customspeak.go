@@ -62,6 +62,10 @@ func StartUI(view *qml.QQmlApplicationEngine) {
 	view.RootContext().SetContextProperty2("initPassword", core.NewQVariant14(config.Password))
 }
 
+func Close() {
+	sc <- nil
+}
+
 func Init() error {
 	root, _ = filepath.Abs(filepath.Dir(os.Args[0]))
 	root = path.Join(root, "modules/customspeak")
@@ -224,7 +228,7 @@ func ready(s *discordgo.Session, event *discordgo.Ready) {
 	userStates = map[string]bool{}
 	userHist = map[string]bool{}
 	if users == nil {
-	  users = map[string]string{}
+		users = map[string]string{}
 	}
 
 	fmt.Println("Ready handler")
@@ -261,25 +265,24 @@ func fetchUsers(guild *discordgo.Guild) {
 // This function will be called (due to AddHandler above) every time a new
 // message is created on any channel that the autenticated bot has access to.
 func voiceStateUpdate(s *discordgo.Session, vs *discordgo.VoiceStateUpdate) {
-	if voiceConnection != nil  && voiceConnection.ChannelID != "" {
+	if voiceConnection != nil && voiceConnection.ChannelID != "" {
 		if vs.ChannelID == "" {
-		  fmt.Println("Disconnect from channel")
-		  voiceConnection.Disconnect()
-		  voiceConnection.Close()
+			fmt.Println("Disconnect from channel")
+			voiceConnection.Disconnect()
+			voiceConnection.Close()
 
-		  bridge.Setguild("")
-		  bridge.Setchannel("")
-		  currentChannel = ""
-		  handlerInstalled = false
-		  return
-	  }
+			bridge.Setguild("")
+			bridge.Setchannel("")
+			currentChannel = ""
+			handlerInstalled = false
+			return
+		}
 	}
 
 	if vs.UserID != me.ID {
 		fmt.Println("Not me")
 		return
 	}
-
 
 	fmt.Println("Voice handler")
 

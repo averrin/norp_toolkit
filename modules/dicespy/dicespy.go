@@ -21,21 +21,21 @@ import (
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 	// "github.com/skratchdot/open-golang/open"
+	"path/filepath"
+
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/qml"
-	"github.com/therecipe/qt/webkit"
-	"github.com/therecipe/qt/widgets"
 	"golang.org/x/net/websocket"
-	"path/filepath"
 )
 
 const avatarRoot string = "https://app.roll20.net"
+
 // const root string = "modules/dicespy"
 const port string = "1323"
 
 const injectScript = "$.getScript('http://127.0.0.1:" + port + "/script')"
 
-// var injectScript string
+// injectScript string
 
 var config = ConfigStruct{}
 var rolls []*Roll
@@ -68,6 +68,10 @@ func saveConfig() {
 	}
 }
 
+func Close() {
+	e.Close()
+}
+
 func StartUI(view *qml.QQmlApplicationEngine) {
 	bridge = NewDsMocBridge(nil)
 	bridge.ConnectServe(func() {
@@ -93,32 +97,7 @@ func StartUI(view *qml.QQmlApplicationEngine) {
 		config.HistoryCount = size
 		saveConfig()
 	})
-	bridge.ConnectViewlink(func(link string) {
-		widgets.NewQApplication(len(os.Args), os.Args)
-		var window = widgets.NewQMainWindow(nil, 0)
-
-		var centralWidget = widgets.NewQWidget(nil, 0)
-		centralWidget.SetLayout(widgets.NewQVBoxLayout())
-
-		var wview = webkit.NewQWebView(nil)
-		wview.Load(core.NewQUrl3(link, 0))
-		centralWidget.Layout().AddWidget(wview)
-
-		var rbutton = widgets.NewQPushButton2("Reload", nil)
-		rbutton.ConnectClicked(func(checked bool) {
-			wview.Reload()
-		})
-		centralWidget.Layout().AddWidget(rbutton)
-		var rollButton = widgets.NewQPushButton2("Test roll", nil)
-		rollButton.ConnectClicked(func(checked bool) {
-			processRoll(getTestRoll())
-		})
-		centralWidget.Layout().AddWidget(rollButton)
-
-		window.SetCentralWidget(centralWidget)
-		window.Show()
-		// open.Run(link)
-	})
+	bridge.ConnectViewlink(viewLink)
 	bridge.ConnectRoll(func() {
 		processRoll(getTestRoll())
 	})
@@ -224,10 +203,8 @@ func Serve() error {
 		return c.String(http.StatusOK, "OK")
 	})
 	go e.Start(":" + port)
+	openRoll20()
 	return nil
-}
-
-func openRoll20() {
 }
 
 func getResult(roll *Roll, t string) RollResult {

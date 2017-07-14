@@ -50,7 +50,14 @@ func main() {
 
 func startUI(model *PluginModel) {
 	core.QCoreApplication_SetAttribute(core.Qt__AA_EnableHighDpiScaling, true)
-	gui.NewQGuiApplication(len(os.Args), os.Args)
+	app := gui.NewQGuiApplication(len(os.Args), os.Args)
+	app.SetQuitOnLastWindowClosed(true)
+	app.ConnectLastWindowClosed(func() {
+		fmt.Println("Closing…")
+		for _, plugin := range plugins {
+			plugin.Close()
+		}
+	})
 	// quickcontrols2.QQuickStyle_SetStyle("universal")
 	view := qml.NewQQmlApplicationEngine(nil)
 
