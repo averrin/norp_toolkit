@@ -11,8 +11,8 @@ find ./modules/ -iname install.sh -exec bash {} \;
 echo -e ""
 
 echo -e "Building main app…"
-export QT_DIR=/home/alexeynabrodov/Qt5.9.1/
-export QT_VERSION=5.9.1
+# export QT_DIR=/home/alexeynabrodov/Qt5.9.1/
+# export QT_VERSION=5.9.1
 export QT_WEBKIT=true
 qtdeploy $1 build desktop .
 cp -r deploy/modules deploy/linux

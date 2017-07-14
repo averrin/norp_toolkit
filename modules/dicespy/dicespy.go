@@ -25,6 +25,9 @@ import (
 
 	"github.com/therecipe/qt/core"
 	"github.com/therecipe/qt/qml"
+	"github.com/therecipe/qt/webkit"
+	"github.com/therecipe/qt/widgets"
+	"github.com/therecipe/qt/network"
 	"golang.org/x/net/websocket"
 )
 
@@ -69,6 +72,9 @@ func saveConfig() {
 }
 
 func Close() {
+	if e == nil {
+		return
+	}
 	e.Close()
 }
 
@@ -198,6 +204,7 @@ func Serve() error {
 	})
 
 	e.POST("/roll", func(c echo.Context) error {
+		fmt.Println("roll")
 		roll := readRoll(c.Request())
 		processRoll(roll)
 		return c.String(http.StatusOK, "OK")
@@ -205,6 +212,73 @@ func Serve() error {
 	go e.Start(":" + port)
 	openRoll20()
 	return nil
+}
+
+func openRoll20() {
+	link := "http://roll20.net"
+	widgets.NewQApplication(len(os.Args), os.Args)
+	var window = widgets.NewQMainWindow(nil, 0)
+
+	var centralWidget = widgets.NewQWidget(nil, 0)
+	centralWidget.SetLayout(widgets.NewQVBoxLayout())
+
+	var wview = webkit.NewQWebView(nil)
+	wview.Load(core.NewQUrl3(link, 0))
+	centralWidget.Layout().AddWidget(wview)
+
+	wview.Page().Settings().SetAttribute(webkit.QWebSettings__DeveloperExtrasEnabled, true)
+	wview.Page().Settings().SetAttribute(webkit.QWebSettings__AllowRunningInsecureContent, true)
+	nm := wview.Page().NetworkAccessManager()
+	nm.ConnectFinished(func(reply *network.QNetworkReply) {
+		// fmt.Println(reply.Url().Path(core.QUrl__PrettyDecoded))
+		header := reply.RawHeader(core.NewQByteArray2("content-security-policy", 23))
+		header.Truncate(0)
+		// fmt.Println(header.Data())
+	})
+	injected := false
+	wview.ConnectLoadFinished(func(ok bool){
+		fmt.Println(wview.Url().Path(core.QUrl__PrettyDecoded))
+		if wview.Url().Path(core.QUrl__PrettyDecoded) == "/editor/" && !injected {
+			s, _ := ioutil.ReadFile(path.Join(root, "payload.js"))
+			wview.Page().MainFrame().EvaluateJavaScript(string(s))
+			injected = true
+			// window.Hide()
+		}
+	})
+
+	window.SetCentralWidget(centralWidget)
+	window.Show()
+}
+
+func viewLink(link string){
+	widgets.NewQApplication(len(os.Args), os.Args)
+	var window = widgets.NewQMainWindow(nil, 0)
+
+	var centralWidget = widgets.NewQWidget(nil, 0)
+	centralWidget.SetLayout(widgets.NewQVBoxLayout())
+
+	var wview = webkit.NewQWebView(nil)
+	wview.Load(core.NewQUrl3(link, 0))
+	centralWidget.Layout().AddWidget(wview)
+
+
+	var bc = widgets.NewQWidget(nil, 0)
+	bc.SetLayout(widgets.NewQHBoxLayout())
+
+	var rbutton = widgets.NewQPushButton2("Reload", nil)
+	rbutton.ConnectClicked(func(checked bool) {
+		wview.Reload()
+	})
+	bc.Layout().AddWidget(rbutton)
+	var rollButton = widgets.NewQPushButton2("Test roll", nil)
+	rollButton.ConnectClicked(func(checked bool) {
+		processRoll(getTestRoll())
+	})
+	bc.Layout().AddWidget(rollButton)
+	centralWidget.Layout().AddWidget(bc)
+
+	window.SetCentralWidget(centralWidget)
+	window.Show()
 }
 
 func getResult(roll *Roll, t string) RollResult {
